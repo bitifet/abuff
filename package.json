@@ -1,0 +1,26 @@
+{
+  "name": "abuffer",
+  "version": "0.0.1",
+  "description": "Asynchronous Buffer Tool.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bitifet/abuffer.git"
+  },
+  "keywords": [
+    "async",
+    "buffer",
+    "promise",
+    "iterator",
+    "parser"
+  ],
+  "author": "Joan Miquel Torres Rigo",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/bitifet/abuffer/issues"
+  },
+  "homepage": "https://github.com/bitifet/abuffer#readme"
+}
