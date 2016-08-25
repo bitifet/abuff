@@ -34,7 +34,7 @@ module.exports = (function(){
             me.resumeCbk = opts.resume;
             if (me.maxLength < 1) throw "Wrong value for maxLength.";
             if (typeof me.stopCbk + typeof me.resumeCbk != "functionfunction") {
-                throw "stop and resume callbacks are mandatory when maxLength is specified";
+                throw "stop and resume callbacks are mandatory when maxLength is specified.";
             };
         };
     };//}}}
@@ -45,7 +45,7 @@ module.exports = (function(){
     // Synchronous input:
     _buff.prototype.push = function stack_push(data){//{{{
         var me = this;
-        if (me.eof()) throw new Exception ("Trying to push data after EOF signal");
+        if (me.eof()) throw "Trying to push data after EOF signal.";
         if (me.queue.length) {
             me.queue.shift().resolve(data);
         } else {
@@ -59,7 +59,7 @@ module.exports = (function(){
     };//}}}
     _buff.prototype.unshift = function stack_unshift(data){//{{{
         var me = this;
-        if (me.eof()) throw new Exception ("Trying to unshift data after EOF signal");
+        if (me.eof()) throw "Trying to unshift data after EOF signal.";
         if (me.queue.length) {
             me.queue.pop().resolve(data);
         } else {
@@ -149,6 +149,26 @@ module.exports = (function(){
         return data;
     };//}}}
 
+    // Synchronous (but BLOCKING) iterator:
+    _buff.prototype[Symbol.iterator] = function buffIterator() {//{{{
+        return {
+            next: () => {
+                try {
+                    return {
+                        value: this.pop(),
+                        done: false,
+                    };
+                } catch (err) {
+                    if (err != "EOF") throw err;
+                    return {
+                        value: undefined,
+                        done: true,
+                    };
+                };
+
+            },
+        };
+    };//}}}
 
     return _buff;
 })();
