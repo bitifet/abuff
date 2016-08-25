@@ -13,17 +13,27 @@ var Deasync = require('deasync');
 module.exports = (function(){
 
     function _buff(opts){//{{{
-        this.stack = [];
-        this.queue = [];
-        this.stopped = false;
-        this.eof = false;
+        var me = this;
+        me.stack = [];
+        me.queue = [];
+        me.stopped = false;
+
+        me.eof = (function(){
+            var eofSignalled = false;
+            return function eofGetSet(set) {
+                if (set) eofSignalled = true;
+                if (eofSignalled) for(let i=0; i<me.queue.length; i++) me.queue[i].reject("EOF");
+                return eofSignalled;
+            };
+        })();
+
         if (opts === undefined) opts = {};
         if (opts.maxLength) {
-            this.maxLength = parseInt(opts.maxLength);
-            this.stopCbk = opts.stop;
-            this.resumeCbk = opts.resume;
-            if (this.maxLength < 1) throw "Wrong value for maxLength.";
-            if (typeof this.stopCbk + typeof this.resumeCbk != "functionfunction") {
+            me.maxLength = parseInt(opts.maxLength);
+            me.stopCbk = opts.stop;
+            me.resumeCbk = opts.resume;
+            if (me.maxLength < 1) throw "Wrong value for maxLength.";
+            if (typeof me.stopCbk + typeof me.resumeCbk != "functionfunction") {
                 throw "stop and resume callbacks are mandatory when maxLength is specified";
             };
         };
@@ -35,8 +45,9 @@ module.exports = (function(){
     // Synchronous input:
     _buff.prototype.push = function stack_push(data){//{{{
         var me = this;
+        if (me.eof()) throw new Exception ("Trying to push data after EOF signal");
         if (me.queue.length) {
-            me.queue.shift()(data);
+            me.queue.shift().resolve(data);
         } else {
             me.stack.push(data);
             if (! me.stopped && me.maxLength && (me.stack.length >= me.maxLength)) {
@@ -48,8 +59,9 @@ module.exports = (function(){
     };//}}}
     _buff.prototype.unshift = function stack_unshift(data){//{{{
         var me = this;
+        if (me.eof()) throw new Exception ("Trying to unshift data after EOF signal");
         if (me.queue.length) {
-            me.queue.pop()(data);
+            me.queue.pop().resolve(data);
         } else {
             me.stack.unshift(data);
             if (! me.stopped && me.maxLength && (me.stack.length >= me.maxLength)) {
@@ -72,9 +84,13 @@ module.exports = (function(){
             };
             return retv;
         } else {
+            if (me.eof()) return Promise.reject("EOF");
             return new Promise(function(resolve, reject){
-                me.queue.push(function(data){
-                    resolve(data);
+                me.queue.push({
+                    resolve: function(data){
+                        resolve(data);
+                    },
+                    reject: reject,
                 });
             });
         };
@@ -91,8 +107,11 @@ module.exports = (function(){
             return retv;
         } else {
             return new Promise(function(resolve, reject){
-                me.queue.unshift(function(data){
-                    resolve(data);
+                me.queue.unshift({
+                    resolve: function(data){
+                        resolve(data);
+                    },
+                    reject: reject,
                 });
             });
         };
@@ -102,24 +121,33 @@ module.exports = (function(){
     _buff.prototype.pop = function stack_pop() {//{{{
         var done = false;
         var data;
-        this.ppop().then(function(result){
-          data = result;
-          done = true;
+        var err;
+        this.ppop().then(function(rcvData){
+            data = rcvData;
+            done = true;
+        }).catch(function(rcvErr){
+            err = rcvErr;
+            done = true;
         });
         Deasync.loopWhile(function(){return !done;});
+        if (err) throw err;
         return data;
     };//}}}
     _buff.prototype.shift = function stack_shift() {//{{{
         var done = false;
         var data;
-        this.pshift().then(function(result){
-          data = result;
-          done = true;
+        var err;
+        this.pshift().then(function(rcvData){
+            data = rcvData;
+            done = true;
+        }).catch(function(rcvErr){
+            err = rcvErr;
+            done = true;
         });
         Deasync.loopWhile(function(){return !done;});
+        if (err) throw err;
         return data;
     };//}}}
-
 
 
     return _buff;
