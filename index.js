@@ -8,12 +8,15 @@
 //
 "use strict";
 
+var Deasync = require('deasync');
+
 module.exports = (function(){
 
     function _buff(opts){//{{{
         this.stack = [];
         this.queue = [];
         this.stopped = false;
+        this.eof = false;
         if (opts === undefined) opts = {};
         if (opts.maxLength) {
             this.maxLength = parseInt(opts.maxLength);
@@ -27,6 +30,9 @@ module.exports = (function(){
     };//}}}
 
     // Basic stack operations:
+    // ======================:
+
+    // Synchronous input:
     _buff.prototype.push = function stack_push(data){//{{{
         var me = this;
         if (me.queue.length) {
@@ -40,7 +46,22 @@ module.exports = (function(){
             }
         }
     };//}}}
-    _buff.prototype.ppop = function stack_pop(){//{{{
+    _buff.prototype.unshift = function stack_unshift(data){//{{{
+        var me = this;
+        if (me.queue.length) {
+            me.queue.pop()(data);
+        } else {
+            me.stack.unshift(data);
+            if (! me.stopped && me.maxLength && (me.stack.length >= me.maxLength)) {
+                ///console.log ("@@@@@ STOPPING @@@@@ ", me.stack.length);
+                me.stopCbk();
+                me.stopped = true;
+            }
+        }
+    };//}}}
+
+    // Asynchronous output (returns promises):
+    _buff.prototype.ppop = function stack_ppop(){//{{{
         var me = this;
         if (me.stack.length) {
             var retv = Promise.resolve(me.stack.pop());
@@ -58,20 +79,7 @@ module.exports = (function(){
             });
         };
     };//}}}
-    _buff.prototype.unshift = function stack_unshift(data){//{{{
-        var me = this;
-        if (me.queue.length) {
-            me.queue.pop()(data);
-        } else {
-            me.stack.unshift(data);
-            if (! me.stopped && me.maxLength && (me.stack.length >= me.maxLength)) {
-                ///console.log ("@@@@@ STOPPING @@@@@ ", me.stack.length);
-                me.stopCbk();
-                me.stopped = true;
-            }
-        }
-    };//}}}
-    _buff.prototype.pshift = function stack_shift(){//{{{
+    _buff.prototype.pshift = function stack_pshift(){//{{{
         var me = this;
         if (me.stack.length) {
             var retv = Promise.resolve(me.stack.shift());
@@ -89,6 +97,30 @@ module.exports = (function(){
             });
         };
     };//}}}
+
+    // Synchronous (but BLOCKING) output:
+    _buff.prototype.pop = function stack_pop() {//{{{
+        var done = false;
+        var data;
+        this.ppop().then(function(result){
+          data = result;
+          done = true;
+        });
+        Deasync.loopWhile(function(){return !done;});
+        return data;
+    };//}}}
+    _buff.prototype.shift = function stack_shift() {//{{{
+        var done = false;
+        var data;
+        this.pshift().then(function(result){
+          data = result;
+          done = true;
+        });
+        Deasync.loopWhile(function(){return !done;});
+        return data;
+    };//}}}
+
+
 
     return _buff;
 })();
