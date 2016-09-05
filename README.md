@@ -18,11 +18,14 @@ shift() operations provided which works thanks to
 [deasync](https://www.npmjs.com/package/deasync) library.
 
 At the end, aBuffer instances are also iterables so they can be accessed with
-any valid iteration statement. A *buff.eof()* method is also provided which, if
-called with true as its first parameter, it will make aBuffer iterator
-interface to end after already injected data is exhausted. If pop/shift
-operations are used instead, then they throw an error if the internal buffer is
-exhausted after *EOF* was triggered.
+any valid iteration statement.
+
+A *buff.eof()* method is also provided which, if called with true as its first
+parameter, it will make aBuffer iterator interface to end after already
+injected data is exhausted. If pop/shift operations are used after that, then
+an *EOF* exception is thrown or, if iterator interface is used instead, then it
+will become end status so iterations can normally finish if input data is
+exhausted (and signalled as it with a `buff.eof(true)` call).
 
 
 Usage
