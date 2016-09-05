@@ -1,5 +1,5 @@
-// index.js
-// ========
+// aBuffer - index.js
+// ==================
 // Asynchronous Buffer 
 //
 // @author: Joan Miquel Torres <jmtorres@112ib.com>
@@ -169,6 +169,65 @@ module.exports = (function(){
             },
         };
     };//}}}
+
+    // Array-like functions:
+    _buff.prototype.map = function arrayLike_map(cbk, thisArg){//{{{
+        var it = Object.create(this);
+        it[Symbol.iterator] = function buffMapIterator(){
+            return {
+                next: () => {
+                    try {
+                        return {
+                            value: cbk.call(thisArg, this.pop()),
+                            done: false,
+                        };
+                    } catch (err) {
+                        if (err != "EOF") throw err;
+                        return {
+                            value: undefined,
+                            done: true,
+                        };
+                    };
+
+                },
+            };
+        };
+        return it;
+    };//}}}
+    _buff.prototype.filter = function arrayLike_filter(cbk, thisArg){//{{{
+        var it = Object.create(this);
+        it[Symbol.iterator] = function buffFilterIterator(){
+            return {
+                next: () => {
+                    var value;
+                    try {
+                        while (cbk.call(thisArg, value = this.pop())); // Consume until next match.
+                        return {
+                            value: value,
+                            done: false,
+                        };
+                    } catch (err) {
+                        if (err != "EOF") throw err;
+                        return {
+                            value: undefined,
+                            done: true,
+                        };
+                    };
+
+                },
+            };
+        };
+        return it;
+    };//}}}
+
+    // Status reporting functions:
+    Object.defineProperty(_buff.prototype, "length", {//{{{
+        enumerable: false,
+        configurable: false,
+        get: function get_virtual_length(){
+            return this.stack.length - this.queue.length;
+        },
+    });//}}}
 
     return _buff;
 })();

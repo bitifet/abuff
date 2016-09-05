@@ -154,6 +154,18 @@ Check or set the buffer *EOF* status.
     buff.eof(); // Returns current eof status.
 
 
+#### Array-Like methods:
+
+Following array-like methods are implemented. They work like its Array
+equivalents but returns an iterator instead of an array. This make possible to
+consume its output without waiting for primary iteration to end and, most
+important, without loading all data on an in-memory array.
+
+  * buff.map(cbk [, thisArg])
+
+  * buff.filter(cbk [,thisArg])
+
+
 Example 1: Simple asynchronous stack
 ------------------------------------
 
